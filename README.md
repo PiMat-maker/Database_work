@@ -1,4 +1,5 @@
 # Database_work
+Noticement: filter logger doesn't work
 ## Topic. Bakugan
 The database contains **four** tables:
 
