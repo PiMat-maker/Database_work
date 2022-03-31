@@ -4,9 +4,11 @@ from sqlalchemy.orm import declarative_base, relationship, backref
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.types import Enum
 import enum
+import os
 
 
-engine = create_engine('postgresql+psycopg2://pimat:pimat@db:5432/bakugan_db', echo=True)
+SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL")
+engine = create_engine(SQLALCHEMY_DATABASE_URI, echo=True)
 Base = declarative_base()
 
 
