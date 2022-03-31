@@ -1,4 +1,5 @@
 import psycopg2
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from create_db import Heroes, Hero_motos, Hero_stories, Side, Space
@@ -71,14 +72,16 @@ def seed_Hero_stories(Session):
 
 
 def seed_Battles(Session):
-    for i in range(20):
+    for _ in range(20):
         run_battle(Session)
 
 
 def main():
+    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL")
+    engine = create_engine(SQLALCHEMY_DATABASE_URI, echo=True)
 
-    engine = create_engine('postgresql+psycopg2://pimat:pimat@db:5432/bakugan_db', echo=True)
     Session = sessionmaker(bind=engine)
+
     seed_Heroes(Session)
     seed_Hero_motos(Session)
     seed_Hero_stories(Session)
