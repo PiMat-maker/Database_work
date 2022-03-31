@@ -1,13 +1,21 @@
 import click
 import logging
+import sys
 from create_db import Base, engine
 from sqlalchemy.orm import sessionmaker
 from seed import seed_Heroes, seed_Hero_motos, seed_Hero_stories, seed_Battles
 from ddl_funcs import add_hero, add_hero_moto, add_hero_story, run_battle, delete_hero
 
+class AlchemyFilter(logging.Filter):
 
-def filter_sqlalchemy(record: logging.LogRecord) -> bool:
-    return record.getMessage().find('sqlalchemy') == -1 or record.levelname != logging.INFO
+    def filter(self, record: logging.LogRecord) -> bool:
+        return record.pathname.find('sqlalchemy/engine') == -1
+
+
+class DrawFilter(logging.Filter):
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        return record.message.find('Result: Draw') == -1
 
 
 @click.group()
@@ -22,11 +30,18 @@ def cli(ctx):
     logging.getLogger("debug_logger").setLevel(level)
 
     console = logging.StreamHandler()
-    console.setLevel(logging.ERROR)
+    console.setLevel(logging.WARNING)
     console_formatter = logging.Formatter("%(filename)s.%(funcName)s, %(levelname)s: %(message)s")
     console.setFormatter(console_formatter)
     logging.getLogger("").addHandler(console)
-    logging.getLogger("").addFilter(filter_sqlalchemy)
+
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.addFilter(AlchemyFilter())
+    logging.getLogger("").addHandler(stream_handler)
+
+    draw_handler = logging.StreamHandler(sys.stdout)
+    draw_handler.addFilter(DrawFilter())
+    logging.getLogger("debug_logger").addHandler(draw_handler)
 
     another_file_handler = logging.FileHandler("not_debug.txt", mode="a+")
     another_file_handler.setLevel(logging.INFO)
