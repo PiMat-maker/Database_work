@@ -1,3 +1,4 @@
+import logging
 import psycopg2
 from sqlalchemy import func
 from create_db import Heroes, Hero_motos, Hero_stories, Battles, Side, Space
@@ -18,7 +19,7 @@ def input_side() -> Side:
         try:
             result_side = Side(input(f"Input one of sides: {[side.value for side in list(Side)]}\n"))
         except ValueError:
-            print("Wrong side name")
+            logging.error("Wrong side name\n")
 
     return result_side
 
@@ -42,7 +43,7 @@ def input_space() -> Space:
         try:
             result_space = Space(input(f"Input one of spaces: {[space.value for space in list(Space)]}\n"))
         except ValueError:
-            print("Wrong space name")
+            logging.error("Wrong space name\n")
 
     return result_space
 
@@ -57,7 +58,7 @@ def input_force() -> int:
             if force <= 0:
                 raise ValueError()
         except ValueError:
-            print("Wrong force value. Value should be positive and more than 0\n")
+            logging.error("Wrong force value. Value should be positive and more than 0\n")
         else:
             if not confirm_input_value("hero's force", str(force)):
                 force = -1
@@ -77,7 +78,7 @@ def get_hero_by_name(heroes_query: list[Heroes]) -> Heroes | None:
     if len(heroes) == 1:
         return heroes[0]
 
-    print("Wrong hero's name")
+    logging.error(f"Hero with name {hero_name} does not exist in database\n")
     
     return None
 
@@ -176,8 +177,8 @@ def run_battle(Session) -> None:
     first_hero: Heroes = choose_hero(first_side, Session)
     second_hero: Heroes = choose_hero(second_side, Session)
 
-    first_hero_moto: Hero_motos = choose_moto(first_hero, Session)
-    second_hero_moto: Hero_motos = choose_moto(second_hero, Session)
+    first_hero_moto: Hero_motos | None = choose_moto(first_hero, Session)
+    second_hero_moto: Hero_motos | None = choose_moto(second_hero, Session)
 
     draw_probability = count_puasson_distibution(first_hero.force / second_hero.force)
     first_win_probability = (1 - draw_probability) * first_hero.force / (first_hero.force + second_hero.force)
@@ -191,13 +192,24 @@ def run_battle(Session) -> None:
     elif first_win_probability + second_win_probability > result_probability:
         winner = 2
 
-    new_battle = Battles(
+    if first_hero_moto is None or second_hero_moto is None:
+        new_battle = Battles(
         hero_1_id=first_hero.id,
-        hero_1_moto_id=first_hero_moto.id,
+        hero_1_moto_id=None,
         hero_2_id=second_hero.id, 
-        hero_2_moto_id=second_hero_moto.id, 
+        hero_2_moto_id=None, 
         winner=winner
     )
+    else:
+        new_battle = Battles(
+            hero_1_id=first_hero.id,
+            hero_1_moto_id=first_hero_moto.id,
+            hero_2_id=second_hero.id, 
+            hero_2_moto_id=second_hero_moto.id, 
+            winner=winner
+        )
+
+    logging.info(str(new_battle))
 
     add_instance(Session, new_battle)
 

@@ -1,3 +1,4 @@
+import logging
 import psycopg2
 from create_db import Heroes, Hero_motos, Side
 import random
@@ -29,15 +30,21 @@ def choose_hero(side: Side, Session) -> Heroes:
     return heroes[index_hero]
 
 
-def choose_moto(hero: Heroes, Session) -> Hero_motos:
+def choose_moto(hero: Heroes, Session) -> Hero_motos | None:
     with Session() as session:
-        motos: list[Hero_motos] = session.query(Hero_motos).filter(Hero_motos.hero_id == hero.id).all()
+            motos: list[Hero_motos] = session.query(Hero_motos).filter(Hero_motos.hero_id == hero.id).all()
 
     number_motos: int = len(motos)
 
-    index_moto: int = randomize_number(number_motos)
+    try:
+        index_moto: int = randomize_number(number_motos)
+        moto: Hero_motos = motos[index_moto]
+    except IndexError:
+        logging.warn(f"No any moto for {hero}")
+        return None
 
-    return motos[index_moto]
+    return moto
+    
 
 
 def count_puasson_distibution(coef_lambda: float) -> float:

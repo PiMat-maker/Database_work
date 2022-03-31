@@ -1,60 +1,104 @@
 import click
+import logging
 from create_db import Base, engine
 from sqlalchemy.orm import sessionmaker
 from seed import seed_Heroes, seed_Hero_motos, seed_Hero_stories, seed_Battles
 from ddl_funcs import add_hero, add_hero_moto, add_hero_story, run_battle, delete_hero
 
 
+def filter_sqlalchemy(record: logging.LogRecord) -> bool:
+    return record.getMessage().find('sqlalchemy') == -1 or record.levelname != logging.INFO
+
 
 @click.group()
-def cli():
-    pass
+@click.pass_context
+def cli(ctx):
+    level = logging.DEBUG
+    logging.basicConfig(
+        level=level,
+        filename="debug.txt",
+        filemode="a+"
+    )
+    logging.getLogger("debug_logger").setLevel(level)
+
+    console = logging.StreamHandler()
+    console.setLevel(logging.ERROR)
+    console_formatter = logging.Formatter("%(filename)s.%(funcName)s, %(levelname)s: %(message)s")
+    console.setFormatter(console_formatter)
+    logging.getLogger("").addHandler(console)
+    logging.getLogger("").addFilter(filter_sqlalchemy)
+
+    another_file_handler = logging.FileHandler("not_debug.txt", mode="a+")
+    another_file_handler.setLevel(logging.INFO)
+    another_file_formatter = logging.Formatter("%(asctime)s.%(msecs)4d: %(message)s")
+    another_file_handler.setFormatter(another_file_formatter)
+    another_file_logger = logging.getLogger("another_file")
+    another_file_logger.addHandler(another_file_handler)
+    ctx.obj["another_file_logger"] = another_file_logger
 
 
 @cli.command("create_db")
-def create_db():
+@click.pass_context
+def create_db(ctx):
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
+    ctx.obj["another_file_logger"].info("Base was created")
 
 
 @cli.command("seed_db")
-def seed_db():
+@click.pass_context
+def seed_db(ctx):
     Session = sessionmaker(bind=engine)
     seed_Heroes(Session)
+    ctx.obj["another_file_logger"].info("Seeded heroes was added to database")
     seed_Hero_motos(Session)
+    ctx.obj["another_file_logger"].info("Seeded motos was added to database")
     seed_Hero_stories(Session)
+    ctx.obj["another_file_logger"].info("Seeded stories was added to database")
     seed_Battles(Session)
+    ctx.obj["another_file_logger"].info("Seeded battles was added to database")
+    
 
 
 @cli.command("add_hero")
-def add_db_hero():
+@click.pass_context
+def add_db_hero(ctx):
     Session = sessionmaker(bind=engine)
     add_hero(Session)
+    ctx.obj["another_file_logger"].info("Hero was added")
 
 
 @cli.command("add_moto")
-def add_db_hero_moto():
+@click.pass_context
+def add_db_hero_moto(ctx):
     Session = sessionmaker(bind=engine)
     add_hero_moto(Session)
+    ctx.obj["another_file_logger"].info("Moto was added")
 
 
 @cli.command("add_story")
-def add_db_hero_story():
+@click.pass_context
+def add_db_hero_story(ctx):
     Session = sessionmaker(bind=engine)
     add_hero_story(Session)
+    ctx.obj["another_file_logger"].info("Story was added")
 
 
 @cli.command("run_battle")
-def add_db_battle():
+@click.pass_context
+def add_db_battle(ctx):
     Session = sessionmaker(bind=engine)
     run_battle(Session)
+    ctx.obj["another_file_logger"].info("Battle was added")
 
 
 @cli.command("delete_hero")
-def delete_db_hero():
+@click.pass_context
+def delete_db_hero(ctx):
     Session = sessionmaker(bind=engine)
     delete_hero(Session)
+    ctx.obj["another_file_logger"].info("Hero was deleted")
 
 
 if __name__ == "__main__":
-    cli()
+    cli(obj={})
